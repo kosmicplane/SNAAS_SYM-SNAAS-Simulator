@@ -53,7 +53,7 @@ The runtime is revision-based: topology, traffic, antennas, failures, world stat
 At time `t`, the swarm is represented by
 
 ```math
-G(t)=\bigl(V(t),E(t)\bigr).
+G(t)=(V(t),E(t)).
 ```
 
 Let the set of failed or unavailable UAVs be
@@ -71,11 +71,7 @@ V_a(t)=V(t)\setminus F(t).
 For positions `p_i(t)` and `p_j(t)`,
 
 ```math
-d_{ij}(t)
-=
-\left\|
-p_i(t)-p_j(t)
-\right\|_2.
+d_{ij}(t)=\|p_i(t)-p_j(t)\|_2.
 ```
 
 Geometric proximity is necessary for many configurations, but it is not sufficient for a valid communication edge.
@@ -100,8 +96,6 @@ G_{\mathrm{rx},j}
 L_{\mathrm{total},ij}.
 ```
 
-This is the equation that should render in GitHub—not as raw bracketed LaTeX.
-
 Thermal-noise power is modeled as
 
 ```math
@@ -125,11 +119,7 @@ The channel-capacity abstraction is
 ```math
 C_{ij}
 =
-\eta B
-\log_2
-\left(
-1+\mathrm{SINR}_{ij}
-\right),
+\eta B\log_2(1+\mathrm{SINR}_{ij}),
 ```
 
 where `eta` is the configured efficiency factor.
@@ -145,10 +135,7 @@ A compact nominal gate is
 ```math
 g_{ij}(t)
 =
-\mathbf 1_{\{d_{ij}\le d_{\max}\}}
-\mathbf 1_{\{\mathrm{SINR}_{ij}\ge\gamma\}}
-\mathbf 1_{\{C_{ij}\ge C_{\min}\}}
-\mathbf 1_{\{\Delta t_{ij}\le T_{\mathrm{fresh}}\}}.
+I[d_{ij}\le d_{max}]\,I[\mathrm{SINR}_{ij}\ge\gamma],I[C_{ij}\ge C_{min}]\,I[\Delta t_{ij}\le T_{fresh}].
 ```
 
 Failure-aware feasibility additionally requires active endpoints:
@@ -156,9 +143,7 @@ Failure-aware feasibility additionally requires active endpoints:
 ```math
 g^F_{ij}(t)
 =
-g_{ij}(t)
-\mathbf 1_{\{i\in V_a(t)\}}
-\mathbf 1_{\{j\in V_a(t)\}}.
+g_{ij}(t)\,I[i\in V_a(t)]\,I[j\in V_a(t)].
 ```
 
 For a path `P`, a simple all-hops-feasible condition is
