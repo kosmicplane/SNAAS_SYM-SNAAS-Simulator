@@ -1,79 +1,110 @@
-# SWARMSYM / NETLAB — Swarm Network-as-a-Service Research Platform
+# SWARMSYM / NETLAB — Swarm Network-as-a-Service Simulation Framework
 
 <p align="center">
-  <strong>Communication-aware multi-UAV simulation · ROS 2 coordination · Isaac Sim embodiment · Sionna link evaluation · failure-aware recovery</strong>
+  <strong>ROS 2 · PX4 · Isaac Sim · NVIDIA Sionna · communication-aware multi-UAV autonomy · topology adaptation · failure recovery</strong>
 </p>
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust-architecture.webp" alt="SWARMSYM system architecture" width="920">
 </p>
 
-SWARMSYM is a modular research platform for studying **UAV swarms that act as reconfigurable airborne communication infrastructure**. The central question is not only whether the vehicles can move through a scene, but whether the swarm can continue to provide an end-to-end communication service while vehicles move, wireless links degrade, nodes fail, and topology is reconfigured.
+## Research objective
 
-The platform couples four layers that are often evaluated independently:
+SWARMSYM studies UAV swarms that act as **reconfigurable airborne communication infrastructure**. The central problem is not only whether individual vehicles can follow trajectories, but whether the swarm can continue to provide an end-to-end service while vehicle geometry, wireless conditions, failures, and topology evolve together.
 
-1. **vehicle motion and world state** through ROS 2 and Isaac Sim;
-2. **wireless-link evaluation** through Sionna-compatible propagation models;
-3. **routing and topology logic** through a time-varying graph with failure-aware feasibility checks;
-4. **experiment evidence** through synchronized revisions, telemetry, metrics, logs, and reproducible run artifacts.
+The framework couples:
+
+- embodied multi-UAV motion;
+- wireless-link evaluation;
+- graph/topology state;
+- packet/service progression;
+- failure injection and recovery;
+- synchronized experiment evidence.
+
+A route is therefore treated as operational only when it is both **topologically present** and **communication-feasible**.
 
 ---
 
-## Research question
+## 1. System architecture
 
-A visual route is not automatically an operational route. SWARMSYM therefore treats the communication state as part of the autonomy problem.
+```mermaid
+flowchart LR
+    S[Scenario / Mission] --> M[Mission Control]
+    M --> R[ROS 2 state + revisions]
+    R --> I[Isaac Sim / PX4 vehicle state]
+    I --> L[Link service]
+    R --> L
+    L --> N[Sionna / analytical channel model]
+    N --> Q[Link metrics]
+    Q --> G[Feasibility gate]
+    G --> P[Packet / service runtime]
+    P --> T[Topology + recovery logic]
+    T --> R
+    Q --> E[Metrics / evidence]
+    P --> E
+```
 
-At time $t$, the swarm is represented by the graph
+The runtime is revision-based: topology, traffic, antennas, failures, world state, and swarm state are validated and acknowledged before they are treated as committed experiment state.
 
-$$
-G(t)=\bigl(V(t),E(t)\bigr),
-$$
+---
 
-with failed vehicles
+## 2. Time-varying swarm graph
 
-$$
-F(t)\subseteq V(t)
-$$
+At time `t`, the swarm is represented by
 
-and active vehicles
+```math
+G(t)=\bigl(V(t),E(t)\bigr).
+```
 
-$$
+Let the set of failed or unavailable UAVs be
+
+```math
+F(t)\subseteq V(t).
+```
+
+The active set is
+
+```math
 V_a(t)=V(t)\setminus F(t).
-$$
+```
 
-For UAV positions $\mathbf p_i(t)$ and $\mathbf p_j(t)$, their separation is
+For positions `p_i(t)` and `p_j(t)`,
 
-$$
-d_{ij}(t)=\left\|\mathbf p_i(t)-\mathbf p_j(t)\right\|_2.
-$$
+```math
+d_{ij}(t)
+=
+\left\|
+p_i(t)-p_j(t)
+\right\|_2.
+```
 
-A candidate edge $e_{ij}$ is useful only when its endpoints are active **and** the current link satisfies the configured physical and communication constraints.
+Geometric proximity is necessary for many configurations, but it is not sufficient for a valid communication edge.
 
 ---
 
-## Communication model
+## 3. Communication model
 
-### Link budget
+### 3.1 Link budget
 
-The analytical layer uses the received-power balance
+The analytical received-power balance is
 
-$$
-P_{\mathrm{rx}}
+```math
+P_{\mathrm{rx},ij}
 =
-P_{\mathrm{tx}}
+P_{\mathrm{tx},i}
 +
-G_{\mathrm{tx}}
+G_{\mathrm{tx},i}
 +
-G_{\mathrm{rx}}
+G_{\mathrm{rx},j}
 -
-L_{\mathrm{total}},
-$$
+L_{\mathrm{total},ij}.
+```
 
-where all gain/loss terms are represented consistently in the configured logarithmic units.
+This is the equation that should render in GitHub—not as raw bracketed LaTeX.
 
-Thermal-noise power is approximated as
+Thermal-noise power is modeled as
 
-$$
+```math
 N_{\mathrm{dBm}}
 =
 -174
@@ -81,223 +112,242 @@ N_{\mathrm{dBm}}
 10\log_{10}(B)
 +
 NF,
-$$
+```
 
-where $B$ is channel bandwidth and $NF$ is receiver noise figure.
+where `B` is receiver bandwidth and `NF` is noise figure.
 
-The theoretical channel-capacity abstraction is
+A signal-quality quantity is then formed from the selected SNR/SINR model.
 
-$$
+### 3.2 Theoretical capacity
+
+The channel-capacity abstraction is
+
+```math
 C_{ij}
 =
 \eta B
-\log_2\!\left(1+\mathrm{SINR}_{ij}\right),
-$$
+\log_2
+\left(
+1+\mathrm{SINR}_{ij}
+\right),
+```
 
-where $\eta$ is an efficiency factor associated with the selected model.
+where `eta` is the configured efficiency factor.
 
-> **Interpretation:** $C_{ij}$ is a theoretical link metric used by the simulator. It is not presented as measured application goodput.
+> `C_ij` is a theoretical simulation metric. It is not reported as measured application goodput unless a specific experiment produces that measurement.
 
-### Link-feasibility gate
+---
 
-A compact representation of the runtime gate is
+## 4. Link-feasibility gate
 
-$$
+A compact nominal gate is
+
+```math
 g_{ij}(t)
 =
 \mathbf 1_{\{d_{ij}\le d_{\max}\}}
-\mathbf 1_{\{\mathrm{SINR}_{ij}\ge \gamma\}}
+\mathbf 1_{\{\mathrm{SINR}_{ij}\ge\gamma\}}
 \mathbf 1_{\{C_{ij}\ge C_{\min}\}}
 \mathbf 1_{\{\Delta t_{ij}\le T_{\mathrm{fresh}}\}}.
-$$
+```
 
 Failure-aware feasibility additionally requires active endpoints:
 
-$$
-g^{F}_{ij}(t)
+```math
+g^F_{ij}(t)
 =
 g_{ij}(t)
 \mathbf 1_{\{i\in V_a(t)\}}
 \mathbf 1_{\{j\in V_a(t)\}}.
-$$
+```
 
-Only feasible active hops can advance the authoritative packet state.
+For a path `P`, a simple all-hops-feasible condition is
+
+```math
+\chi_P(t)
+=
+\prod_{(i,j)\in P}
+g^F_{ij}(t).
+```
+
+Thus `chi_P = 1` only when every active hop passes the configured feasibility predicates.
 
 ---
 
-## Why the feasibility gate matters
+## 5. Topology semantics
 
-For each active hop, packet progression can depend on:
+Different topology modes correspond to different service semantics:
 
-- endpoint activity;
-- route validity;
-- operational and hard-outage range;
-- metric freshness;
-- SNR/SINR threshold;
-- capacity threshold;
-- antenna and world-state validity.
-
-A failed predicate pauses the corresponding packet progression and records the reason rather than reporting a visually connected route as an operational one.
-
-| Topology mode | Runtime interpretation |
+| Mode | Runtime interpretation |
 |---|---|
-| **Chain** | one infeasible active hop pauses the end-to-end stream |
-| **Parallel** | independent branch cursors continue while their own paths remain feasible |
-| **Forest** | state is maintained per subtree / branch |
-| **Manual** | operator-defined edges are preserved but remain subject to the same physical and communication gate |
+| **Chain** | one infeasible active hop pauses the end-to-end path |
+| **Parallel** | branch cursors progress independently |
+| **Forest** | service state is maintained per branch/subtree |
+| **Manual** | operator-defined edges are retained but still checked by the physical/communication gate |
+
+The implementation distinguishes between **graph connectivity** and **service connectivity**. A connected graph can still fail the service requirement if one or more active hops violate range, freshness, SNR/SINR, capacity, or node-health constraints.
 
 ---
 
-## System architecture
+## 6. Failure and recovery
 
-~~~mermaid
-flowchart LR
-    A[Mission / Scenario] --> B[Mission Control]
-    B --> C[ROS 2 state + revisions]
-    C --> D[Isaac Sim vehicle/world state]
-    C --> E[Link-service request]
-    D --> E
-    E --> F[Sionna-compatible propagation]
-    F --> G[SNR / SINR / capacity / delay]
-    G --> H[Feasibility gate]
-    H --> I[Routing + packet runtime]
-    I --> J[Failure / recovery logic]
-    J --> C
-    C --> K[Evidence + metrics]
-    G --> K
-    I --> K
-~~~
+A node failure first changes the active graph, then forces route/service reevaluation.
 
-The architecture is transactional: topology, swarm, antenna, traffic, world, failure, and recovery changes create a revision that is validated, applied, acknowledged, and only then considered committed.
+```text
+nominal service
+→ failure injected or detected
+→ node removed from active set
+→ incident links invalidated
+→ affected route becomes infeasible
+→ replacement topology proposed
+→ link metrics recomputed
+→ feasibility gate re-evaluated
+→ ROS 2 / link service / simulator acknowledge revision
+→ service resumes after replacement route is feasible
+```
+
+This separates **topology reconfiguration** from **validated service recovery**.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust-recovery.webp" alt="Failure and recovery state" width="820">
+</p>
 
 ---
 
-## Operational evidence
+## 7. Sionna communication layer
 
-The following demonstrations are linked to distinct parts of the runtime rather than repeated as a generic gallery.
+The communication layer can operate at multiple fidelity levels, from fast analytical models to geometry-aware Sionna evaluation.
 
-### 1. Embodied multi-UAV scenario
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust/new/sionna-grid.webp" width="32%" alt="Sionna spatial grid">
+  <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust/new/sionna-coverage.webp" width="32%" alt="Sionna coverage result">
+  <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust/new/sionna-spectrum.webp" width="32%" alt="Sionna spectrum result">
+</p>
+
+The purpose of these fields is to make communication state available to routing and autonomy logic. They should not be interpreted as field-measured RF maps unless a separate measurement campaign is explicitly linked.
+
+---
+
+## 8. Operational evidence
+
+### Embodied urban swarm
 
 <p align="center">
   <a href="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/media/projects/swarmsym-city.mp4">
-    <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust-preview.webp" width="760" alt="Urban multi-UAV SWARMSYM simulation">
+    <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust/new/swarmsym-scene.webp" width="760" alt="SWARMSYM embodied urban scene">
   </a>
 </p>
 
-This clip shows the swarm operating inside the simulated environment used to couple vehicle state, network evaluation, and mission logic.
-
-### 2. Dynamic topology
+### Dynamic topology
 
 <p align="center">
   <a href="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/media/projects/swarmsym-topology.mp4">
-    <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust-topology.webp" width="760" alt="SWARMSYM dynamic topology visualization">
+    <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust-topology.webp" width="760" alt="Dynamic topology behavior">
   </a>
 </p>
 
-Topology changes are evaluated against the current communication state rather than accepted only because a new edge has been drawn.
-
-### 3. Relay state and recovery
+### Relay state / standby recovery
 
 <p align="center">
   <a href="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/media/projects/swarmsym-relay-state.mp4">
-    <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust-recovery.webp" width="760" alt="SWARMSYM failure and recovery behavior">
+    <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust-preview.webp" width="760" alt="Relay state and standby recovery">
   </a>
 </p>
 
-A recovery is considered successful only after the replacement path is synchronized and satisfies the configured feasibility conditions.
-
-> Click an image to open the associated MP4.
+> Click a figure to open the corresponding MP4.
 
 ---
 
-## Failure and recovery sequence
+## 9. Model fidelity
 
-~~~text
-nominal service
-→ fault injected / detected
-→ failed endpoint removed from active graph
-→ affected path becomes infeasible
-→ candidate topology / standby state proposed
-→ link metrics recomputed
-→ feasibility gate evaluated
-→ ROS 2 + link service + Isaac Sim acknowledge the revision
-→ service resumes only after the replacement path is feasible
-~~~
-
-This sequence distinguishes **topological reconfiguration** from **validated service recovery**.
-
----
-
-## Model fidelity
-
-The platform keeps model fidelity explicit:
+The framework keeps simulation fidelity explicit:
 
 | Level | Interpretation |
 |---|---|
-| **F0** | layout / mission preview |
-| **F1** | analytical communication and motion abstractions |
-| **F2** | stochastic channel, traffic, failure, and uncertainty studies |
-| **F3** | geometry-aware Sionna RT adapter |
+| **F0** | mission/layout preview |
+| **F1** | analytical motion and communication abstractions |
+| **F2** | stochastic traffic/channel/failure studies |
+| **F3** | geometry-aware Sionna evaluation |
 | **F4** | external protocol-aware co-simulation |
-| **F5** | optional autopilot execution |
+| **F5** | optional autopilot-level execution |
 
-Results from different fidelity levels should not be merged without preserving their model provenance and assumptions.
+This hierarchy prevents analytical capacity, simulated packet behavior, geometry-aware radio estimates, and autopilot behavior from being treated as interchangeable evidence.
 
 ---
 
-## Metrics
+## 10. Metrics
 
-Representative outputs include:
+### Communication
 
-**Communication**
 - received power and path loss;
 - SNR / SINR;
 - theoretical capacity;
 - delay and jitter;
 - packet delivery ratio;
-- throughput / goodput when produced by the corresponding runtime layer;
-- outage and utilization;
-- queue state and Age of Information.
+- throughput/goodput when produced by the corresponding runtime layer;
+- outage duration;
+- queue state;
+- Age of Information.
 
-**Topology**
+### Topology
+
 - connected components;
 - hop count;
-- graph diameter and degree;
+- node degree;
+- graph diameter;
 - articulation points and bridges;
-- path diversity and disjoint paths;
+- path diversity;
+- disjoint paths;
 - algebraic connectivity;
 - topology churn;
 - failed-node tolerance.
 
-Each metric is associated with timestamp, source, units, model/fidelity, freshness, and experiment provenance whenever those fields are available.
+A standard algebraic-connectivity metric is the second-smallest eigenvalue of the graph Laplacian:
+
+```math
+\lambda_2(L).
+```
+
+A positive `lambda_2` indicates connectivity for an undirected graph representation; its magnitude is used only as a graph-level robustness indicator, not as a radio-quality metric.
 
 ---
 
-## Runtime stack
+## 11. Validation strategy
 
-- **Mission Control** — scenario design, topology, swarm control, traffic, failures, telemetry, synchronization, diagnostics, and evidence.
-- **ROS 2** — typed state coordination, revisions, packet runtime, vehicle state, failure events, and acknowledgements.
-- **Sionna-compatible link service** — propagation, received power, SNR/SINR, capacity, delay, feasibility, and model provenance.
-- **Isaac Sim** — vehicle/world embodiment and scene acknowledgement.
-- **Evidence layer** — configurations, hashes, events, CSV metrics, manifests, logs, plots, and support bundles.
+The validation pipeline separates three questions:
 
-PX4 SITL is optional and isolated from the core execution path.
+1. **internal consistency:** do synchronized components agree on configuration, revision, timing, and topology state?
+2. **model plausibility:** do link metrics change consistently with geometry, channel settings, and failures?
+3. **external comparison:** do analogous scenarios remain consistent with trends from external datasets such as AirPAW?
+
+The AirPAW comparison is used as a plausibility reference for communication behavior; it is not treated as direct reproduction of the KAUST simulation scenes.
 
 ---
 
-## Running the platform
+## 12. Runtime stack
+
+- **Mission Control** — scenario design, telemetry, topology, traffic, failures, diagnostics, evidence.
+- **ROS 2** — typed state coordination, revisions, packet/service runtime, acknowledgements.
+- **Isaac Sim** — embodied vehicle/world state.
+- **PX4** — optional autopilot execution path.
+- **Sionna-compatible link service** — received power, SNR/SINR, capacity, delay, feasibility.
+- **Evidence layer** — metrics, logs, hashes, manifests, plots, and experiment artifacts.
+
+---
+
+## 13. Running the framework
 
 ### Clean installation
 
-~~~bash
+```bash
 cd ~/NETLAB
 chmod +x scripts/netlab scripts/*.sh Docker/scripts/*.sh Docker/workspace/ros2/*.sh
 ./scripts/bootstrap_host.sh --non-interactive
-~~~
+```
 
 ### Daily operation
 
-~~~bash
+```bash
 cd ~/NETLAB
 ./scripts/netlab launch
 ./scripts/netlab status
@@ -305,85 +355,59 @@ cd ~/NETLAB
 ./scripts/netlab sync-doctor
 ./scripts/netlab smoke-test
 ./scripts/netlab stop
-~~~
+```
 
-Mission Control is served on port 8765.
-
----
-
-## Authoritative lifecycle
-
-~~~text
-PREFLIGHT
-→ REPAIRING
-→ BUILDING
-→ STARTING_MISSION_CONTROL
-→ STARTING_SIONNA
-→ WAITING_FOR_SIONNA
-→ STARTING_ROS
-→ WAITING_FOR_ROS_GRAPH
-→ WAITING_FOR_PACKET_RUNTIME
-→ STARTING_ISAAC
-→ WAITING_FOR_ISAAC_SCENE
-→ SYNCHRONIZING
-→ SMOKE_TESTING
-→ READY / RUNNING
-~~~
-
-Every bounded wait exposes the expected signal, latest observation, elapsed time, timeout, retry state, and relevant logs.
+Mission Control is served on port `8765`.
 
 ---
 
-## Repository structure
+## 14. Repository structure
 
-~~~text
+```text
 apps/mission_control/       Mission Control backend and frontend
-netlab/                     State, synchronization, models, runtime and feasibility logic
-Docker/                     Compose, Isaac, ROS 2, Sionna, optional PX4 profile
-plugins/                    Research algorithm packages
-scenarios/                  Validated experiments and regression scenarios
-schemas/                    Experiment, plugin, and API contracts
-openapi/                    Mission Control API specification
-reports/                    Validation, performance, and security reports
-tests/                      Unit, integration, and scientific tests
-docs/                       Architecture, operator, developer, and research documentation
-~~~
+netlab/                     state, synchronization, models, runtime
+Docker/                     compose, Isaac, ROS 2, Sionna, optional PX4
+plugins/                    research algorithm packages
+scenarios/                  validated experiments and regressions
+schemas/                    experiment and API contracts
+openapi/                    Mission Control API
+reports/                    validation / performance reports
+tests/                      unit, integration, scientific tests
+docs/                       architecture, operator, research documentation
+```
 
 ---
 
-## Verification
+## 15. Verification
 
-~~~bash
+```bash
 PYTHONPATH=. python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 tests/run_all.py
 ./scripts/diagnostics/validate_release.sh
 ./scripts/netlab target-acceptance --embedded
-~~~
+```
 
-On the target system:
+Target-system acceptance:
 
-~~~bash
+```bash
 ./scripts/netlab target-acceptance
-~~~
+```
 
 ---
 
-## Documentation
+## 16. Documentation
 
 - [System architecture](docs/architecture/system_architecture.md)
 - [Synchronization protocol](docs/architecture/synchronization_protocol.md)
-- [Algorithm benchmark protocol](docs/research/algorithm_benchmark_protocol.md)
-- [Research playbook](docs/research/research_playbook.md)
 - [Mathematical model](docs/research/mathematical_model.md)
 - [Model credibility](docs/research/model_credibility.md)
-- [Metrics catalog](docs/reference/metrics_catalog.md)
+- [Research playbook](docs/research/research_playbook.md)
+- [Algorithm benchmark protocol](docs/research/algorithm_benchmark_protocol.md)
 - [Known limitations](docs/research/known_limitations.md)
 - [Validation report](VALIDATION.md)
 
+---
+
 ## Scientific scope
 
-SWARMSYM is a simulation and experimentation framework. Analytical capacity, modeled link quality, simulated packet behavior, and embodied vehicle motion are kept distinct so that model outputs are not presented as measured real-world network performance unless an experiment explicitly supports that interpretation.
-
-## License
-
-See [LICENSE](LICENSE).
+SWARMSYM is a **simulation and experimentation framework**. Analytical link quantities, Sionna-derived radio estimates, simulated packet/service state, and embodied UAV behavior are recorded with distinct provenance so that simulation results are not presented as measured field performance.
