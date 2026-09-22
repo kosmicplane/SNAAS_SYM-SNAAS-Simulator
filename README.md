@@ -10,7 +10,7 @@
 
 ## Research objective
 
-SWARMSYM studies UAV swarms that act as **reconfigurable airborne communication infrastructure**. The central problem is not only whether individual vehicles can follow trajectories, but whether the swarm can continue to provide an end-to-end service while vehicle geometry, wireless conditions, failures, and topology evolve together.
+SWARMSYM studies UAV swarms used as **reconfigurable airborne communication infrastructure**. The research question is whether the swarm can maintain an end-to-end service while vehicle geometry, wireless conditions, failures, and network topology change together.
 
 The framework couples:
 
@@ -21,7 +21,7 @@ The framework couples:
 - failure injection and recovery;
 - synchronized experiment evidence.
 
-A route is therefore treated as operational only when it is both **topologically present** and **communication-feasible**.
+A route is considered operational only when it exists in the current graph and every active hop satisfies the configured communication constraints.
 
 ---
 
@@ -124,7 +124,7 @@ C_{ij}
 
 where `eta` is the configured efficiency factor.
 
-> `C_ij` is a theoretical simulation metric. It is not reported as measured application goodput unless a specific experiment produces that measurement.
+> `C_ij` is a theoretical channel metric. Application-layer throughput is reported separately when it is produced by the corresponding experiment.
 
 ---
 
@@ -191,7 +191,7 @@ nominal service
 → service resumes after replacement route is feasible
 ```
 
-This separates **topology reconfiguration** from **validated service recovery**.
+The sequence separates topology reconfiguration from service recovery: a new path is not accepted until the corresponding communication conditions are satisfied.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust-recovery.webp" alt="Failure and recovery state" width="820">
@@ -209,7 +209,7 @@ The communication layer can operate at multiple fidelity levels, from fast analy
   <img src="https://raw.githubusercontent.com/kosmicplane/kosmicplane.github.io/main/assets/images/research/kaust/new/sionna-spectrum.webp" width="32%" alt="Sionna spectrum result">
 </p>
 
-The purpose of these fields is to make communication state available to routing and autonomy logic. They should not be interpreted as field-measured RF maps unless a separate measurement campaign is explicitly linked.
+These fields provide communication state to the routing and autonomy layers. Geometry-aware simulation outputs and field measurements are kept as separate evidence sources.
 
 ---
 
@@ -256,7 +256,7 @@ The framework keeps simulation fidelity explicit:
 | **F4** | external protocol-aware co-simulation |
 | **F5** | optional autopilot-level execution |
 
-This hierarchy prevents analytical capacity, simulated packet behavior, geometry-aware radio estimates, and autopilot behavior from being treated as interchangeable evidence.
+The fidelity label is carried with each experiment so that analytical capacity, packet simulation, geometry-aware radio estimates, and autopilot behavior can be compared without conflating their assumptions.
 
 ---
 
@@ -305,7 +305,7 @@ The validation pipeline separates three questions:
 2. **model plausibility:** do link metrics change consistently with geometry, channel settings, and failures?
 3. **external comparison:** do analogous scenarios remain consistent with trends from external datasets such as AirPAW?
 
-The AirPAW comparison is used as a plausibility reference for communication behavior; it is not treated as direct reproduction of the KAUST simulation scenes.
+AirPAW-derived comparisons are used as an external plausibility check for communication trends rather than as a direct reproduction of the simulated KAUST scenes.
 
 ---
 
@@ -393,6 +393,6 @@ Target-system acceptance:
 
 ---
 
-## Scientific scope
+## Validation scope
 
-SWARMSYM is a **simulation and experimentation framework**. Analytical link quantities, Sionna-derived radio estimates, simulated packet/service state, and embodied UAV behavior are recorded with distinct provenance so that simulation results are not presented as measured field performance.
+SWARMSYM is a simulation and experimentation framework. Analytical link quantities, Sionna-derived radio estimates, simulated packet/service state, and embodied UAV behavior retain separate provenance throughout the pipeline, allowing results to be interpreted at the fidelity level that produced them.
