@@ -5,7 +5,7 @@ This document states the principal graph, communication, and service-feasibility
 ## 1. Time-varying graph
 
 ```math
-G(t)=\bigl(V(t),E(t)\bigr).
+G(t)=(V(t),E(t)).
 ```
 
 Failed nodes:
@@ -23,11 +23,7 @@ V_a(t)=V(t)\setminus F(t).
 Inter-UAV distance:
 
 ```math
-d_{ij}(t)
-=
-\left\|
-p_i(t)-p_j(t)
-\right\|_2.
+d_{ij}(t)=\|p_i(t)-p_j(t)\|_2.
 ```
 
 ---
@@ -67,11 +63,7 @@ If signal and noise/interference terms are converted consistently, the selected 
 ```math
 C_{ij}
 =
-\eta B
-\log_2
-\left(
-1+\mathrm{SINR}_{ij}
-\right).
+\eta B\log_2(1+\mathrm{SINR}_{ij}).
 ```
 
 `C_ij` is a theoretical simulation quantity unless an experiment explicitly measures a corresponding application-layer rate.
@@ -83,10 +75,7 @@ C_{ij}
 ```math
 g_{ij}(t)
 =
-\mathbf 1_{\{d_{ij}\le d_{\max}\}}
-\mathbf 1_{\{\mathrm{SINR}_{ij}\ge\gamma\}}
-\mathbf 1_{\{C_{ij}\ge C_{\min}\}}
-\mathbf 1_{\{\Delta t_{ij}\le T_{\mathrm{fresh}}\}}.
+I[d_{ij}\le d_{max}]\,I[\mathrm{SINR}_{ij}\ge\gamma],I[C_{ij}\ge C_{min}]\,I[\Delta t_{ij}\le T_{fresh}].
 ```
 
 Failure-aware form:
@@ -94,9 +83,7 @@ Failure-aware form:
 ```math
 g^F_{ij}(t)
 =
-g_{ij}(t)
-\mathbf 1_{\{i\in V_a(t)\}}
-\mathbf 1_{\{j\in V_a(t)\}}.
+g_{ij}(t)\,I[i\in V_a(t)]\,I[j\in V_a(t)].
 ```
 
 ---
@@ -129,10 +116,7 @@ The active feasible graph is
 ```math
 G_F(t)
 =
-\left(
-V_a(t),
-E_F(t)
-\right),
+(V_a(t),E_F(t)),
 ```
 
 with
@@ -140,10 +124,7 @@ with
 ```math
 E_F(t)
 =
-\left\{
-(i,j)\in E(t):
-g^F_{ij}(t)=1
-\right\}.
+\{(i,j)\in E(t):g^F_{ij}(t)=1\}.
 ```
 
 A recovery event must therefore restore a feasible service path in `G_F(t)`, not merely create a candidate edge in the visual topology.
