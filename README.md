@@ -23,7 +23,7 @@ The platform couples four layers that are often evaluated independently:
 
 A visual route is not automatically an operational route. SWARMSYM therefore treats the communication state as part of the autonomy problem.
 
-At time \(t\), the swarm is represented by the graph
+At time $t$, the swarm is represented by the graph
 
 $$
 G(t)=\bigl(V(t),E(t)\bigr),
@@ -41,13 +41,13 @@ $$
 V_a(t)=V(t)\setminus F(t).
 $$
 
-For UAV positions \(\mathbf p_i(t)\) and \(\mathbf p_j(t)\), their separation is
+For UAV positions $\mathbf p_i(t)$ and $\mathbf p_j(t)$, their separation is
 
 $$
 d_{ij}(t)=\left\|\mathbf p_i(t)-\mathbf p_j(t)\right\|_2.
 $$
 
-A candidate edge \(e_{ij}\) is useful only when its endpoints are active **and** the current link satisfies the configured physical and communication constraints.
+A candidate edge $e_{ij}$ is useful only when its endpoints are active **and** the current link satisfies the configured physical and communication constraints.
 
 ---
 
@@ -83,7 +83,7 @@ N_{\mathrm{dBm}}
 NF,
 $$
 
-where \(B\) is channel bandwidth and \(NF\) is receiver noise figure.
+where $B$ is channel bandwidth and $NF$ is receiver noise figure.
 
 The theoretical channel-capacity abstraction is
 
@@ -94,9 +94,9 @@ C_{ij}
 \log_2\!\left(1+\mathrm{SINR}_{ij}\right),
 $$
 
-where \(\eta\) is an efficiency factor associated with the selected model.
+where $\eta$ is an efficiency factor associated with the selected model.
 
-> **Interpretation:** \(C_{ij}\) is a theoretical link metric used by the simulator. It is not presented as measured application goodput.
+> **Interpretation:** $C_{ij}$ is a theoretical link metric used by the simulator. It is not presented as measured application goodput.
 
 ### Link-feasibility gate
 
