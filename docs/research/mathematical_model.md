@@ -1,40 +1,40 @@
-# Mathematical model
+# Mathematical Model
 
-This document summarizes the mathematical abstractions used by SWARMSYM for graph state, communication feasibility, and failure-aware packet progression. These equations describe **simulation models**; they should not be interpreted as measured real-world wireless performance unless a specific experiment provides that evidence.
+This document states the principal graph, communication, and service-feasibility relations used by SWARMSYM. All display equations use GitHub's fenced `math` syntax to avoid raw-LaTeX rendering failures.
 
-## 1. Time-varying swarm graph
+## 1. Time-varying graph
 
-At time $t$, the swarm is represented by
+```math
+G(t)=\bigl(V(t),E(t)\bigr).
+```
 
-$$
-G(t)=\bigl(V(t),E(t)\bigr),
-$$
+Failed nodes:
 
-where $V(t)$ is the set of UAVs and $E(t)$ the candidate communication edges.
+```math
+F(t)\subseteq V(t).
+```
 
-If $F(t)\subseteq V(t)$ is the set of failed or unavailable UAVs, the active node set is
+Active nodes:
 
-$$
+```math
 V_a(t)=V(t)\setminus F(t).
-$$
+```
 
-For UAV positions $\mathbf p_i(t)$ and $\mathbf p_j(t)$,
+Inter-UAV distance:
 
-$$
+```math
 d_{ij}(t)
 =
 \left\|
-\mathbf p_i(t)-\mathbf p_j(t)
+p_i(t)-p_j(t)
 \right\|_2.
-$$
+```
 
-This geometric relation is only one input to the link decision; proximity alone does not imply communication feasibility.
+---
 
-## 2. Analytical link budget
+## 2. Link budget
 
-The analytical received-power model is
-
-$$
+```math
 P_{\mathrm{rx},ij}
 =
 P_{\mathrm{tx},i}
@@ -44,108 +44,156 @@ G_{\mathrm{tx},i}
 G_{\mathrm{rx},j}
 -
 L_{\mathrm{total},ij}.
-$$
+```
 
-Thermal-noise power is approximated in dBm by
+Thermal-noise approximation:
 
-$$
+```math
 N_{\mathrm{dBm}}
 =
 -174
 +
 10\log_{10}(B)
 +
-NF,
-$$
+NF.
+```
 
-where:
+If signal and noise/interference terms are converted consistently, the selected SNR/SINR model produces `SINR_ij`.
 
-- $B$ is the configured receiver bandwidth;
-- $NF$ is the receiver noise figure.
-
-The corresponding signal-quality quantity is evaluated through the selected SNR/SINR model.
+---
 
 ## 3. Theoretical capacity
 
-The link-capacity abstraction is
-
-$$
+```math
 C_{ij}
 =
 \eta B
-\log_2\!\left(
+\log_2
+\left(
 1+\mathrm{SINR}_{ij}
-\right),
-$$
+\right).
+```
 
-with efficiency factor $\eta$.
+`C_ij` is a theoretical simulation quantity unless an experiment explicitly measures a corresponding application-layer rate.
 
-The resulting $C_{ij}$ is retained as a **theoretical channel metric**. It is not labeled as achieved application throughput unless a higher-fidelity experiment explicitly measures and reports that quantity.
+---
 
-## 4. Communication feasibility
+## 4. Feasibility gate
 
-A compact nominal gate is
-
-$$
+```math
 g_{ij}(t)
 =
-\mathbf 1_{\{d_{ij}(t)\le d_{\max}\}}
-\mathbf 1_{\{\mathrm{SINR}_{ij}(t)\ge \gamma\}}
-\mathbf 1_{\{C_{ij}(t)\ge C_{\min}\}}
-\mathbf 1_{\{\Delta t_{ij}(t)\le T_{\mathrm{fresh}}\}}.
-$$
+\mathbf 1_{\{d_{ij}\le d_{\max}\}}
+\mathbf 1_{\{\mathrm{SINR}_{ij}\ge\gamma\}}
+\mathbf 1_{\{C_{ij}\ge C_{\min}\}}
+\mathbf 1_{\{\Delta t_{ij}\le T_{\mathrm{fresh}}\}}.
+```
 
-Here:
+Failure-aware form:
 
-- $d_{\max}$ is the configured operational or outage range;
-- $\gamma$ is the required SNR/SINR threshold;
-- $C_{\min}$ is the minimum configured capacity;
-- $T_{\mathrm{fresh}}$ is the maximum accepted age of the current metric sample.
-
-Failure-aware feasibility requires active endpoints:
-
-$$
+```math
 g^F_{ij}(t)
 =
 g_{ij}(t)
 \mathbf 1_{\{i\in V_a(t)\}}
 \mathbf 1_{\{j\in V_a(t)\}}.
-$$
+```
 
-Only links satisfying the full runtime gate are allowed to advance authoritative packet state.
+---
 
-## 5. Topology-dependent packet semantics
+## 5. Path feasibility
 
-The graph can be interpreted under several runtime modes:
+For path `P`,
 
-- **Chain:** one infeasible active hop pauses the end-to-end stream.
-- **Parallel:** branch cursors progress independently when their own paths remain feasible.
-- **Forest:** packet/service state is maintained per subtree.
-- **Manual:** operator-defined edges are preserved, but every active edge remains subject to the same physical and communication feasibility conditions.
+```math
+\chi_P(t)
+=
+\prod_{(i,j)\in P}
+g^F_{ij}(t).
+```
 
-## 6. Failure and recovery
+Hence
 
-Let $G_a(t)$ denote the subgraph induced by active nodes and feasible edges. A fault changes either the node set, the edge set, or both. Recovery therefore requires more than drawing a replacement path:
+```math
+\chi_P(t)=1
+```
 
-$$
-G(t)
-\;\longrightarrow\;
-G_a(t)
-\;\longrightarrow\;
-G_{\mathrm{candidate}}(t)
-\;\longrightarrow\;
-G_{\mathrm{feasible}}(t).
-$$
+only when every hop on the path is feasible under the current model state.
 
-Service is resumed only after the replacement topology has been acknowledged by the participating subsystems and the active route satisfies the configured communication gate.
+---
 
-## 7. Interpretation
+## 6. Failure-aware graph
 
-The mathematical layer is intentionally separated from model fidelity:
+The active feasible graph is
 
-- analytical link calculations support fast deterministic studies;
-- stochastic or geometry-aware Sionna models add propagation detail;
-- Isaac Sim supplies embodied vehicle/world state;
-- optional PX4 execution adds autopilot-level dynamics.
+```math
+G_F(t)
+=
+\left(
+V_a(t),
+E_F(t)
+\right),
+```
 
-Keeping these levels explicit prevents analytical, simulated, and externally measured quantities from being treated as interchangeable evidence.
+with
+
+```math
+E_F(t)
+=
+\left\{
+(i,j)\in E(t):
+g^F_{ij}(t)=1
+\right\}.
+```
+
+A recovery event must therefore restore a feasible service path in `G_F(t)`, not merely create a candidate edge in the visual topology.
+
+---
+
+## 7. Graph-level connectivity metrics
+
+For an undirected adjacency matrix `A`, degree matrix `D`, and graph Laplacian
+
+```math
+L=D-A,
+```
+
+the algebraic connectivity is
+
+```math
+\lambda_2(L),
+```
+
+the second-smallest eigenvalue of `L`.
+
+This quantity is a topology indicator only; it does not replace the link-level SNR/capacity/feasibility model.
+
+---
+
+## 8. Service semantics
+
+- **Chain:** all hops on the active route must remain feasible.
+- **Parallel:** each branch maintains independent progression state.
+- **Forest:** state is maintained per subtree/branch.
+- **Manual:** operator-selected edges remain subject to the same feasibility model.
+
+The key distinction is
+
+```math
+\text{topological connectivity}
+\neq
+\text{communication-feasible service}.
+```
+
+---
+
+## 9. Fidelity boundary
+
+The same equations can be populated by different model sources:
+
+- analytical path-loss/link models;
+- stochastic channel models;
+- geometry-aware Sionna outputs;
+- external protocol-aware co-simulation.
+
+Model provenance must therefore accompany metrics when results from different fidelity levels are compared.
