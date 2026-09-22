@@ -4,21 +4,21 @@ This document summarizes the mathematical abstractions used by SWARMSYM for grap
 
 ## 1. Time-varying swarm graph
 
-At time \(t\), the swarm is represented by
+At time $t$, the swarm is represented by
 
 $$
 G(t)=\bigl(V(t),E(t)\bigr),
 $$
 
-where \(V(t)\) is the set of UAVs and \(E(t)\) the candidate communication edges.
+where $V(t)$ is the set of UAVs and $E(t)$ the candidate communication edges.
 
-If \(F(t)\subseteq V(t)\) is the set of failed or unavailable UAVs, the active node set is
+If $F(t)\subseteq V(t)$ is the set of failed or unavailable UAVs, the active node set is
 
 $$
 V_a(t)=V(t)\setminus F(t).
 $$
 
-For UAV positions \(\mathbf p_i(t)\) and \(\mathbf p_j(t)\),
+For UAV positions $\mathbf p_i(t)$ and $\mathbf p_j(t)$,
 
 $$
 d_{ij}(t)
@@ -60,8 +60,8 @@ $$
 
 where:
 
-- \(B\) is the configured receiver bandwidth;
-- \(NF\) is the receiver noise figure.
+- $B$ is the configured receiver bandwidth;
+- $NF$ is the receiver noise figure.
 
 The corresponding signal-quality quantity is evaluated through the selected SNR/SINR model.
 
@@ -78,9 +78,9 @@ C_{ij}
 \right),
 $$
 
-with efficiency factor \(\eta\).
+with efficiency factor $\eta$.
 
-The resulting \(C_{ij}\) is retained as a **theoretical channel metric**. It is not labeled as achieved application throughput unless a higher-fidelity experiment explicitly measures and reports that quantity.
+The resulting $C_{ij}$ is retained as a **theoretical channel metric**. It is not labeled as achieved application throughput unless a higher-fidelity experiment explicitly measures and reports that quantity.
 
 ## 4. Communication feasibility
 
@@ -97,10 +97,10 @@ $$
 
 Here:
 
-- \(d_{\max}\) is the configured operational or outage range;
-- \(\gamma\) is the required SNR/SINR threshold;
-- \(C_{\min}\) is the minimum configured capacity;
-- \(T_{\mathrm{fresh}}\) is the maximum accepted age of the current metric sample.
+- $d_{\max}$ is the configured operational or outage range;
+- $\gamma$ is the required SNR/SINR threshold;
+- $C_{\min}$ is the minimum configured capacity;
+- $T_{\mathrm{fresh}}$ is the maximum accepted age of the current metric sample.
 
 Failure-aware feasibility requires active endpoints:
 
@@ -125,7 +125,7 @@ The graph can be interpreted under several runtime modes:
 
 ## 6. Failure and recovery
 
-Let \(G_a(t)\) denote the subgraph induced by active nodes and feasible edges. A fault changes either the node set, the edge set, or both. Recovery therefore requires more than drawing a replacement path:
+Let $G_a(t)$ denote the subgraph induced by active nodes and feasible edges. A fault changes either the node set, the edge set, or both. Recovery therefore requires more than drawing a replacement path:
 
 $$
 G(t)
