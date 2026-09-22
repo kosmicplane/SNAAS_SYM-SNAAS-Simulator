@@ -158,13 +158,7 @@ This quantity is a topology indicator only; it does not replace the link-level S
 - **Forest:** state is maintained per subtree/branch.
 - **Manual:** operator-selected edges remain subject to the same feasibility model.
 
-The key distinction is
-
-```math
-\text{topological connectivity}
-\neq
-\text{communication-feasible service}.
-```
+The key distinction is that **topological connectivity is not equivalent to communication-feasible service**.
 
 ---
 
