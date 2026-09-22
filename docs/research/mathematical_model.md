@@ -1,6 +1,6 @@
 # Mathematical Model
 
-This document states the principal graph, communication, and service-feasibility relations used by SWARMSYM. All display equations use GitHub's fenced `math` syntax to avoid raw-LaTeX rendering failures.
+This note summarizes the graph, communication, and service-feasibility relations used by SWARMSYM.
 
 ## 1. Time-varying graph
 
@@ -127,7 +127,7 @@ E_F(t)
 \{(i,j)\in E(t):g^F_{ij}(t)=1\}.
 ```
 
-A recovery event must therefore restore a feasible service path in `G_F(t)`, not merely create a candidate edge in the visual topology.
+A recovery event restores a service path in `G_F(t)` only after the required link-feasibility conditions are satisfied.
 
 ---
 
@@ -147,7 +147,7 @@ the algebraic connectivity is
 
 the second-smallest eigenvalue of `L`.
 
-This quantity is a topology indicator only; it does not replace the link-level SNR/capacity/feasibility model.
+This quantity characterizes graph connectivity and is evaluated alongside, rather than in place of, the link-level SNR, capacity, and feasibility model.
 
 ---
 
@@ -158,7 +158,7 @@ This quantity is a topology indicator only; it does not replace the link-level S
 - **Forest:** state is maintained per subtree/branch.
 - **Manual:** operator-selected edges remain subject to the same feasibility model.
 
-The key distinction is that **topological connectivity is not equivalent to communication-feasible service**.
+Accordingly, **topological connectivity and communication-feasible service are evaluated separately**.
 
 ---
 
@@ -171,4 +171,4 @@ The same equations can be populated by different model sources:
 - geometry-aware Sionna outputs;
 - external protocol-aware co-simulation.
 
-Model provenance must therefore accompany metrics when results from different fidelity levels are compared.
+Model provenance is retained with each metric so that results from different fidelity levels can be compared consistently.
